@@ -1,0 +1,5 @@
+# program package requirements
+
+splunk-sdk
+redis
+pycrypto
