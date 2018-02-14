@@ -1,0 +1,4 @@
+
+class SplunkConnectAttributeError(Exception):
+	pass
+
