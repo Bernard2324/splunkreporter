@@ -31,6 +31,6 @@ class SplunkConnection(object):
 		for j in args:
 			setattr(self, j, kwargs[j])
 		self.splunkconn = client.connect(host=self.host, port=self.port, username=self.user, \
-		                                 password =self.passwd)
+		                                 password=self.passwd)
 		
 		
