@@ -47,7 +47,7 @@ class SplunkConnection(object):
 				if isinstance(self.splunkconn, client.Service):
 					self.splunkconn.restart(timeout=120)
 				else:
-					raise SplunkConnectAttributeError('')
-		except SplunkConnectAttributeError:
+					raise SplunkConnectInstanceError('')
+		except SplunkConnectInstanceError:
 			creds = self.redise.hgetall()
 			self.__class__(*['host', 'port', 'user', 'passwd'], **creds)
