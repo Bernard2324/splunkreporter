@@ -1,19 +1,19 @@
 # Connection to Splunk!
 
 import redis
+import types
 import subprocess
 from splunklib import client
 from Exceptions import *
 
-redis_available = True
-if not all(['check_output' in subprocess.__dict__.keys(),
-            subprocess.check_output(['pidof', 'redis']) is not None]):
+redis_available = False
+if not all(['check_output' in subprocess.__dict__.keys(), subprocess.check_output(['pidof', 'redis']) is not None]):
 	
-	redis_available = False
+	redis_available = True
 	
 class SplunkConnectMeta(type):
 	
-	def __new__(cls, name, bases, dct):
+	def __init__(cls, name, bases, dct):
 		if not hasattr(cls, 'connectionregister'):
 			cls.connectionregister = {}
 		else:
@@ -40,6 +40,9 @@ class SplunkConnection(object):
 			password=self.passwd
 		)
 		
+	def app(self):
+		return [i for i in self.splunkconn.apps]
+		
 	def KeepAlive(self):
 		try:
 			if not all([hasattr(self, 'splunkconn'), isinstance(self.splunkconn, client.Service)]):
@@ -48,3 +51,12 @@ class SplunkConnection(object):
 		except SplunkConnectInstanceError:
 			creds = self.redise.hgetall(self.user)
 			self.__class__(*['host', 'port', 'user', 'passwd'], **creds)
+			
+if __name__ == "__main__":
+	spcreds = {
+		'host': 'splunkserver.domain.com',
+		'port': 8089,
+		'user': 'admin',
+		'passwd': 'admin'
+	}
+	x = SplunkConnection(*['host', 'port', 'user', 'passwd'], **spcreds)
