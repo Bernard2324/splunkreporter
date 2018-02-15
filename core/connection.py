@@ -30,7 +30,24 @@ class SplunkConnection(object):
 			raise SplunkConnectAttributeError('')
 		for j in args:
 			setattr(self, j, kwargs[j])
-		self.splunkconn = client.connect(host=self.host, port=self.port, username=self.user, \
-		                                 password=self.passwd)
 		
+		if redis_available:
+			# store vals for session use
+			self.redise = redis.Redis(host='localhost', port=10000, db=0)
+			self.redise.hmset(dict(kwargs), self.user)
+			
+		self.splunkconn = client.connect(host=self.host, port=self.port, username=self.user,
+			password=self.passwd
+		)
 		
+	def KeepAlive(self):
+		try:
+			if hasattr(self, 'splunkconn'):
+				# if you import the entire splunklib, you must use splunklib.client.service
+				if isinstance(self.splunkconn, client.Service):
+					self.splunkconn.restart(timeout=120)
+				else:
+					raise SplunkConnectAttributeError('')
+		except SplunkConnectAttributeError:
+			creds = self.redise.hgetall()
+			self.__class__(*['host', 'port', 'user', 'passwd'], **creds)
