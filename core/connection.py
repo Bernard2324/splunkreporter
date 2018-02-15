@@ -42,12 +42,9 @@ class SplunkConnection(object):
 		
 	def KeepAlive(self):
 		try:
-			if hasattr(self, 'splunkconn'):
-				# if you import the entire splunklib, you must use splunklib.client.service
-				if isinstance(self.splunkconn, client.Service):
-					self.splunkconn.restart(timeout=120)
-				else:
-					raise SplunkConnectInstanceError('')
+			if not all([hasattr(self, 'splunkconn'), isinstance(self.splunkconn, client.Service)]):
+				raise SplunkConnectInstanceError('')
+			self.splunkconn.restart(timeout=120)
 		except SplunkConnectInstanceError:
-			creds = self.redise.hgetall()
+			creds = self.redise.hgetall(self.user)
 			self.__class__(*['host', 'port', 'user', 'passwd'], **creds)
