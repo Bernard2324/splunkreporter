@@ -52,11 +52,3 @@ class SplunkConnection(object):
 			creds = self.redise.hgetall(self.user)
 			self.__class__(*['host', 'port', 'user', 'passwd'], **creds)
 			
-if __name__ == "__main__":
-	spcreds = {
-		'host': 'splunkserver.domain.com',
-		'port': 8089,
-		'user': 'admin',
-		'passwd': 'admin'
-	}
-	x = SplunkConnection(*['host', 'port', 'user', 'passwd'], **spcreds)
