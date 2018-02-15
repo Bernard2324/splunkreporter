@@ -40,9 +40,6 @@ class SplunkConnection(object):
 			password=self.passwd
 		)
 		
-	def app(self):
-		return [i for i in self.splunkconn.apps]
-		
 	def KeepAlive(self):
 		try:
 			if not all([hasattr(self, 'splunkconn'), isinstance(self.splunkconn, client.Service)]):
