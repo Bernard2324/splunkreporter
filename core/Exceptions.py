@@ -4,3 +4,4 @@ class SplunkConnectAttributeError(Exception):
 
 class SplunkConnectInstanceError(Exception):
 	pass
+
