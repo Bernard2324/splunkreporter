@@ -6,7 +6,8 @@ from logging import SplunkLog
 @SplunkLog()
 def myfunction():
 	pass
-
+	
+	
 """
 
 import logging
@@ -39,7 +40,4 @@ class SplunkLog(object):
 		self.loggerlevel = self.loglevels.get(loglevel)
 		self.splunklogger = logging.Logger()
 		self.splunklogger.setLevel(self.loggerlevel)
-	
-	@property
-	def something(self):
-		pass
+

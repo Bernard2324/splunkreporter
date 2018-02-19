@@ -1,0 +1,4 @@
+.idea/
+.git/
+*.py[cod]
+.DS_Store

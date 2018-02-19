@@ -39,7 +39,7 @@ class SplunkConnection(object):
 		self.splunkconn = client.connect(host=self.host, port=self.port, username=self.user,
 			password=self.passwd
 		)
-		
+
 	def KeepAlive(self):
 		try:
 			if not all([hasattr(self, 'splunkconn'), isinstance(self.splunkconn, client.Service)]):
@@ -48,4 +48,4 @@ class SplunkConnection(object):
 		except SplunkConnectInstanceError:
 			creds = self.redise.hgetall(self.user)
 			self.__class__(*['host', 'port', 'user', 'passwd'], **creds)
-			
+		

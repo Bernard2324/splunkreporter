@@ -5,3 +5,7 @@ class SplunkConnectAttributeError(Exception):
 class SplunkConnectInstanceError(Exception):
 	pass
 
+class SplunkArgumentError(Exception):
+	pass
+
+

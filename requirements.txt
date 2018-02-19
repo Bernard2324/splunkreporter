@@ -3,3 +3,4 @@
 splunk-sdk
 redis
 pycrypto
+pika

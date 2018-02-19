@@ -1,9 +1,18 @@
 import pika
 from Exceptions import SplunkArgumentError
 
+
+def queue_callback(ch, method, properties, body):
+	# carry out queue task
+	
+	ch.basic_ack(delivery_tag=method.delivery_tag)
+
 """
 I decided to use a Singleton to refer to the same Queue instance accross the entire application
 """
+
+
+# RabbitMQ Singleton Metaclass
 class SplunkQueueMeta(type):
 	_instances = {}
 	
@@ -13,6 +22,7 @@ class SplunkQueueMeta(type):
 		return cls._instances[cls]
 
 
+# RabbitMQ Connection & Channel Instance
 class SplunkQueueProperties(object):
 	__metaclass__ = SplunkQueueMeta
 	
@@ -20,42 +30,65 @@ class SplunkQueueProperties(object):
 		self.conn = pika.BlockingConnection(pika.ConnectionParameters('localhost', 10000))
 		self.channel = self.conn.channel()
 		
+
+# RabbitMQ Exchange
+class SplunkQueueExchange(object):
+	# Handle Producer Messages
+	def __init__(self): pass
 	
-class SplunkQueueClose(object):
-	
-	def __init__(self):
-		self.l_instance = SplunkQueueProperties()
-	
-	@staticmethod
-	def queue_close(self):
-		self.l_instance.conn.close()
+	@classmethod
+	def create_exchange(cls, name='splunklogs', etype='fanout'):
+		cls.l_instance = SplunkQueueProperties()
+		cls.l_instance.channel.exchange_declare(exchange=name, exchange_type=etype)
 		
 
+SplunkQueueExchange().create_exchange()
+
+
+# RabbitMQ Close Connection
+class SplunkQueueClose(object):
+
+	@classmethod
+	def queue_close(cls):
+		cls.l_instance = SplunkQueueProperties()
+		cls.l_instance.conn.close()
+		
+
+# RabbitMQ Producer
 class SplunkQueueSend(object):
+	# Generate Task
 	
-	def __init__(self):
-		self.l_instance = SplunkQueueProperties()
-		
-	@staticmethod
-	def send_declare(self):
-		self.l_instance.channel.queue_declare(queue='Splunk')
-		
+	@classmethod
+	def send_declare(cls):
+		cls.l_instance = SplunkQueueProperties()
+		cls.l_instance.channel.queue_declare(queue='Splunk', durable=True)
+	
 	def splunk_exchange(self, *args, **kwargs):
 		if not any([i in kwargs for i in args]):
 			raise SplunkArgumentError('')
 		
+		# Persistent Messaging
 		self.l_instance.channel.basic_publish(
-			exchange='',
+			exchange='splunklogs',
 			routing_key='Splunk',
-			body=kwargs['data']
+			body=kwargs['data'],
+			properties=pika.BasicProperties(
+				delivery_mode=2
+			)
 		)
 	
 
+# RabbitMQ Consumer
 class SplunkQueueReceive(object):
+	# Receive and 'Work' Task
 	
-	def __init__(self):
-		self.l_instance = SplunkQueueProperties()
+	@classmethod
+	def send_declare(cls):
+		cls.l_instance = SplunkQueueProperties()
+		cls.l_instance.channel.queue_declare(queue='Splunk', durable=True)
+		cls.l_instance.channel.basic_qos(prefetch_count=2)
 		
-	@staticmethod
-	def send_declare(self):
-		self.l_instance.channel.queue_declare(queue='Splunk')
+		cls.l_instance.channel.basic_consume(queue_callback, queue='Splunk', no_ack=False)
+		
+		# Enter Consuming Loop
+		cls.l_instance.channel.start_consuming()

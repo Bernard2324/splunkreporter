@@ -1,9 +1,8 @@
 import threading
-from Queue import *
+
 from logging import *
-from Exceptions import SplunkArgumentError
-
-
+from Queue import *
+from Exceptions import *
 
 
 class SplunkThread(threading.Thread):
