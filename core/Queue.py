@@ -1,11 +1,20 @@
 import pika
+import time
 from Exceptions import SplunkArgumentError
 
 
+def outbuffer(args):
+	# for now I will print, later I want these in a DB for Normalization
+	print(time.strftime('%Y-%m-%d %H:%M:%S'), args)
+	
+
 def queue_callback(ch, method, properties, body):
 	# carry out queue task
-	
-	ch.basic_ack(delivery_tag=method.delivery_tag)
+	ret = dict()
+	ret['routing_key'] = method.routing_key
+	ret['headers'] = properties.headers
+	ret['body'] = body
+	outbuffer(ret)
 
 """
 I decided to use a Singleton to refer to the same Queue instance accross the entire application
@@ -14,7 +23,7 @@ I decided to use a Singleton to refer to the same Queue instance accross the ent
 
 # RabbitMQ Singleton Metaclass
 class SplunkQueueMeta(type):
-	_instances = {}
+	_instances = dict()
 	
 	def __call__(cls, *args, **kwargs):
 		if cls not in cls._instances:
@@ -34,41 +43,47 @@ class SplunkQueueProperties(object):
 # RabbitMQ Exchange
 class SplunkQueueExchange(object):
 	# Handle Producer Messages
-	def __init__(self): pass
 	
-	@classmethod
-	def create_exchange(cls, name='splunklogs', etype='fanout'):
-		cls.l_instance = SplunkQueueProperties()
-		cls.l_instance.channel.exchange_declare(exchange=name, exchange_type=etype)
+	@staticmethod
+	def create_exchange(name='splunklogs', etype='fanout'):
+		# hide the private variable in @staticmethod decorator, which does not pass object instance or object class
+		# thus this private method cannot be accessed outside
+		_l_instance = SplunkQueueProperties()
+		_l_instance.channel.exchange_declare(exchange=name, exchange_type=etype)
 		
 
-SplunkQueueExchange().create_exchange()
+SplunkQueueExchange.create_exchange()
 
 
 # RabbitMQ Close Connection
 class SplunkQueueClose(object):
 
-	@classmethod
-	def queue_close(cls):
-		cls.l_instance = SplunkQueueProperties()
-		cls.l_instance.conn.close()
+	@staticmethod
+	def queue_close():
+		# Call: SplunkQueueClose.queue_close()
 		
+		_l_instance = SplunkQueueProperties()
+		_l_instance.conn.close()
 
-# RabbitMQ Producer
+
+#RabbitMQ Producer
 class SplunkQueueSend(object):
 	# Generate Task
-	
-	@classmethod
-	def send_declare(cls):
-		cls.l_instance = SplunkQueueProperties()
-		cls.l_instance.channel.queue_declare(queue='Splunk', durable=True)
-	
-	def splunk_produce(self, *args, **kwargs):
+
+	# def __init__(self):
+	# 	_l_instance = SplunkQueueProperties()
+	# 	_l_instance.channel.queue_declare(queue='Splunk', durable=True)
+	# 	self.i_access = _l_instance
+
+	@staticmethod
+	def splunk_produce(*args, **kwargs):
+		_l_instance = SplunkQueueProperties()
+		_l_instance.channel.queue_declare(queue='Splunk', durable=True)
 		if not any([i in kwargs for i in args]):
 			raise SplunkArgumentError('')
-		
+
 		# Persistent Messaging
-		self.l_instance.channel.basic_publish(
+		_l_instance.channel.basic_publish(
 			exchange='',
 			routing_key='Splunk',
 			body=kwargs['data'],
@@ -76,44 +91,44 @@ class SplunkQueueSend(object):
 				delivery_mode=2
 			)
 		)
-	
+
 
 # RabbitMQ Consumer
 class SplunkQueueReceive(object):
 	# Receive and 'Work' Task
 	
-	@classmethod
-	def splunk_consume(cls):
-		cls.l_instance = SplunkQueueProperties()
-		cls.l_instance.channel.queue_declare(queue='Splunk', durable=True)
-		cls.l_instance.channel.basic_qos(prefetch_count=2)
+	@staticmethod
+	def splunk_consume():
+		_l_instance = SplunkQueueProperties()
+		_l_instance.channel.queue_declare(queue='Splunk', durable=True)
+		_l_instance.channel.basic_qos(prefetch_count=2)
 		
-		cls.l_instance.channel.basic_consume(queue_callback, queue='Splunk', no_ack=False)
+		_l_instance.channel.basic_consume(queue_callback, queue='Splunk', no_ack=False)
 		
 		# Enter Consuming Loop
-		cls.l_instance.channel.start_consuming()
+		_l_instance.channel.start_consuming()
 
 
 class SplunkQueueLiveLogsProduce(object):
 	
-	@classmethod
-	def splunk_log_produce(cls, *args, **kwargs):
+	@staticmethod
+	def splunk_log_produce(*args, **kwargs):
 		if not any([i in kwargs for i in args]):
 			raise SplunkArgumentError('')
 		
-		cls.l_instance = SplunkQueueProperties()
-		cls.l_instance.channel.basic_publish(exchange='splunklogs', routing_key='', body=kwargs['data'])
+		_l_instance = SplunkQueueProperties()
+		_l_instance.channel.basic_publish(exchange='splunklogs', routing_key='', body=kwargs['data'])
 		
 
 class SplunkQueueLiveLogsConsume(object):
 	
-	@classmethod
-	def splunk_log_consume(cls):
-		cls.l_instance = SplunkQueueProperties()
+	@staticmethod
+	def splunk_log_consume():
+		_l_instance = SplunkQueueProperties()
 		
-		livelogs = cls.l_instance.channel.queue_declare(exclusive=True)
-		cls.l_instance.channel.queue_bind(exchange='logs', queue=livelogs.method.queue)
+		livelogs = _l_instance.channel.queue_declare(exclusive=True)
+		_l_instance.channel.queue_bind(exchange='logs', queue=livelogs.method.queue)
 		
-		cls.l_instance.channel.basic_consume(queue_callback, queue=livelogs.method.queue, no_ack=True)
-		cls.l_instance.channel.start_consuming()
-		
+		_l_instance.channel.basic_consume(queue_callback, queue=livelogs.method.queue, no_ack=True)
+		_l_instance.channel.start_consuming()
+
