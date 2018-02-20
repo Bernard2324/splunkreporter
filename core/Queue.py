@@ -63,13 +63,13 @@ class SplunkQueueSend(object):
 		cls.l_instance = SplunkQueueProperties()
 		cls.l_instance.channel.queue_declare(queue='Splunk', durable=True)
 	
-	def splunk_exchange(self, *args, **kwargs):
+	def splunk_produce(self, *args, **kwargs):
 		if not any([i in kwargs for i in args]):
 			raise SplunkArgumentError('')
 		
 		# Persistent Messaging
 		self.l_instance.channel.basic_publish(
-			exchange='splunklogs',
+			exchange='',
 			routing_key='Splunk',
 			body=kwargs['data'],
 			properties=pika.BasicProperties(
@@ -83,7 +83,7 @@ class SplunkQueueReceive(object):
 	# Receive and 'Work' Task
 	
 	@classmethod
-	def send_declare(cls):
+	def splunk_consume(cls):
 		cls.l_instance = SplunkQueueProperties()
 		cls.l_instance.channel.queue_declare(queue='Splunk', durable=True)
 		cls.l_instance.channel.basic_qos(prefetch_count=2)
@@ -92,3 +92,28 @@ class SplunkQueueReceive(object):
 		
 		# Enter Consuming Loop
 		cls.l_instance.channel.start_consuming()
+
+
+class SplunkQueueLiveLogsProduce(object):
+	
+	@classmethod
+	def splunk_log_produce(cls, *args, **kwargs):
+		if not any([i in kwargs for i in args]):
+			raise SplunkArgumentError('')
+		
+		cls.l_instance = SplunkQueueProperties()
+		cls.l_instance.channel.basic_publish(exchange='splunklogs', routing_key='', body=kwargs['data'])
+		
+
+class SplunkQueueLiveLogsConsume(object):
+	
+	@classmethod
+	def splunk_log_consume(cls):
+		cls.l_instance = SplunkQueueProperties()
+		
+		livelogs = cls.l_instance.channel.queue_declare(exclusive=True)
+		cls.l_instance.channel.queue_bind(exchange='logs', queue=livelogs.method.queue)
+		
+		cls.l_instance.channel.basic_consume(queue_callback, queue=livelogs.method.queue, no_ack=True)
+		cls.l_instance.channel.start_consuming()
+		
