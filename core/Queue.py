@@ -37,9 +37,9 @@ class SplunkQueueExchange(object):
 	def __init__(self): pass
 	
 	@classmethod
-	def create_exchange(cls, name='splunklogs', etype='fanout'):
-		cls.l_instance = SplunkQueueProperties()
-		cls.l_instance.channel.exchange_declare(exchange=name, exchange_type=etype)
+	def create_exchange(self, name='splunklogs', etype='fanout'):
+		self.l_instance = SplunkQueueProperties()
+		self.l_instance.channel.exchange_declare(exchange=name, exchange_type=etype)
 		
 
 SplunkQueueExchange().create_exchange()
@@ -49,9 +49,9 @@ SplunkQueueExchange().create_exchange()
 class SplunkQueueClose(object):
 
 	@classmethod
-	def queue_close(cls):
-		cls.l_instance = SplunkQueueProperties()
-		cls.l_instance.conn.close()
+	def queue_close(self):
+		self.l_instance = SplunkQueueProperties()
+		self.l_instance.conn.close()
 		
 
 # RabbitMQ Producer
@@ -59,9 +59,9 @@ class SplunkQueueSend(object):
 	# Generate Task
 	
 	@classmethod
-	def send_declare(cls):
-		cls.l_instance = SplunkQueueProperties()
-		cls.l_instance.channel.queue_declare(queue='Splunk', durable=True)
+	def send_declare(self):
+		self.l_instance = SplunkQueueProperties()
+		self.l_instance.channel.queue_declare(queue='Splunk', durable=True)
 	
 	def splunk_produce(self, *args, **kwargs):
 		if not any([i in kwargs for i in args]):
@@ -83,37 +83,37 @@ class SplunkQueueReceive(object):
 	# Receive and 'Work' Task
 	
 	@classmethod
-	def splunk_consume(cls):
-		cls.l_instance = SplunkQueueProperties()
-		cls.l_instance.channel.queue_declare(queue='Splunk', durable=True)
-		cls.l_instance.channel.basic_qos(prefetch_count=2)
+	def splunk_consume(self):
+		self.l_instance = SplunkQueueProperties()
+		self.l_instance.channel.queue_declare(queue='Splunk', durable=True)
+		self.l_instance.channel.basic_qos(prefetch_count=2)
 		
-		cls.l_instance.channel.basic_consume(queue_callback, queue='Splunk', no_ack=False)
+		self.l_instance.channel.basic_consume(queue_callback, queue='Splunk', no_ack=False)
 		
 		# Enter Consuming Loop
-		cls.l_instance.channel.start_consuming()
+		self.l_instance.channel.start_consuming()
 
 
 class SplunkQueueLiveLogsProduce(object):
 	
 	@classmethod
-	def splunk_log_produce(cls, *args, **kwargs):
+	def splunk_log_produce(self, *args, **kwargs):
 		if not any([i in kwargs for i in args]):
 			raise SplunkArgumentError('')
 		
-		cls.l_instance = SplunkQueueProperties()
-		cls.l_instance.channel.basic_publish(exchange='splunklogs', routing_key='', body=kwargs['data'])
+		self.l_instance = SplunkQueueProperties()
+		self.l_instance.channel.basic_publish(exchange='splunklogs', routing_key='', body=kwargs['data'])
 		
 
 class SplunkQueueLiveLogsConsume(object):
 	
 	@classmethod
-	def splunk_log_consume(cls):
-		cls.l_instance = SplunkQueueProperties()
+	def splunk_log_consume(self):
+		self.l_instance = SplunkQueueProperties()
 		
-		livelogs = cls.l_instance.channel.queue_declare(exclusive=True)
-		cls.l_instance.channel.queue_bind(exchange='logs', queue=livelogs.method.queue)
+		livelogs = self.l_instance.channel.queue_declare(exclusive=True)
+		self.l_instance.channel.queue_bind(exchange='logs', queue=livelogs.method.queue)
 		
-		cls.l_instance.channel.basic_consume(queue_callback, queue=livelogs.method.queue, no_ack=True)
-		cls.l_instance.channel.start_consuming()
+		self.l_instance.channel.basic_consume(queue_callback, queue=livelogs.method.queue, no_ack=True)
+		self.l_instance.channel.start_consuming()
 		
